@@ -10,6 +10,7 @@ import {
   type InsertExpense, type ProjectPayment, type InsertProjectPayment, UserRole
 } from "@shared/schema";
 import session from "express-session";
+import type { Store as SessionStore } from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
 import { pool, db } from "./db";
@@ -115,7 +116,7 @@ export interface IStorage {
   getProjectPaymentsByProject(projectId: number): Promise<ProjectPayment[]>;
   
   // Session store for authentication
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
 }
 
 export class MemStorage implements IStorage {
@@ -621,7 +622,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    // Ensure role is properly parsed as UserRole enum
+    const userInput = {
+      ...insertUser,
+      role: insertUser.role as UserRole
+    };
+    const [user] = await db.insert(users).values(userInput).returning();
     return user;
   }
   
