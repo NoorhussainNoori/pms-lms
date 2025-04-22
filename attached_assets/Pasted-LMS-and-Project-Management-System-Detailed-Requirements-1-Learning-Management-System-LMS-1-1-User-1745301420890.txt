@@ -1,0 +1,258 @@
+LMS and Project Management System Detailed Requirements
+1. Learning Management System (LMS)
+1.1 User Roles:
+1.1.1 Admin
+Full control over the system and can manage all aspects of the LMS.
+
+Can manually add students, assign them to courses, and manage all course content.
+
+Can generate and view reports, manage finances, and track student and instructor performance.
+
+1.1.2 Instructor
+Can create, modify, and upload course content (including YouTube video links and PDFs).
+
+Can create quizzes, assign them to chapters or videos, and see student results.
+
+Can respond to student comments or inquiries related to their courses.
+
+1.1.3 Student
+Can view course content (videos and PDFs).
+
+Can take quizzes and view their results.
+
+Can comment on lessons and interact with instructors.
+
+1.2 Core Features
+1.2.1 Course Enrollment & Subscription
+Admin's Role:
+
+Add student accounts manually.
+
+Assign students to courses based on in-office payments (monthly subscription model).
+
+Set course fees, apply discounts as needed.
+
+1.2.2 Course Content Management
+Instructor’s Role:
+
+Upload and embed YouTube videos for each chapter of the course.
+
+Upload supplementary PDFs and other materials (if necessary).
+
+Can create quizzes for each chapter, including multiple-choice questions, true/false, and fill-in-the-blank types.
+
+1.2.3 Quizzes
+Features:
+
+Instructors can create quizzes linked to specific chapters or videos.
+
+Quizzes should be automatically graded by the system, especially for multiple-choice, true/false, and fill-in-the-blank questions.
+
+The system should track student scores and provide feedback on quiz performance.
+
+Instructors can view student performance by quiz, including which students answered which questions correctly.
+
+1.2.4 Comments and Interaction
+Student’s Role:
+
+Can leave comments on videos or lessons.
+
+Can ask questions, rate lessons, and interact with peers.
+
+Instructor’s Role:
+
+Can respond to student comments and queries within the course.
+
+2. Project Management System
+2.1 User Roles:
+2.1.1 Admin
+Full control over the project management system.
+
+Can create projects, assign tasks, manage project budgets, and track overall progress.
+
+2.1.2 Project Manager
+Can create new projects, milestones, and tasks.
+
+Can assign tasks to employees and track milestone progress.
+
+Can view overall project financials, but cannot make payments.
+
+2.1.3 Employee
+Assigned specific tasks by project managers.
+
+Can view projects they are assigned to and mark tasks as completed.
+
+Cannot assign tasks but can update progress on tasks they are responsible for.
+
+2.2 Core Features
+2.2.1 Project Creation and Management
+Admin/Project Manager’s Role:
+
+Create new projects with titles, descriptions, clients, deadlines, and budgets.
+
+Break the project into multiple milestones and tasks.
+
+2.2.2 Task Assignment and Tracking
+Admin/Project Manager’s Role:
+
+Assign specific tasks to employees.
+
+Employees cannot choose tasks but can be assigned by the Project Manager.
+
+Employee’s Role:
+
+View their assigned tasks and mark them as "In Progress" or "Completed."
+
+2.2.3 Milestones and Progress
+Features:
+
+Each project has defined milestones that represent key achievements or deadlines.
+
+Task completion affects milestone progress and, overall, the project progress.
+
+Client Dashboard: Clients can track the project's progress using a unique ID, which shows completed milestones and tasks with percentage completions.
+
+2.2.4 Employee Task Management
+Features:
+
+Each employee can only work on a task they have been assigned.
+
+Tasks can be marked as "In Progress" and "Completed."
+
+If a task is occupied by one employee, others cannot work on it unless allowed by the Project Manager.
+
+3. Finance System
+3.1 User Roles:
+3.1.1 Admin
+Has access to all financial data for both the LMS and Project Management System.
+
+Can view financial reports but cannot directly edit financial details (e.g., payments, expenses).
+
+3.1.2 Finance Team
+Can add, edit, and track financial data such as student payments, project payments, and expenses.
+
+Can create dynamic categories for expenses and track all payments (due and received).
+
+3.2 Core Features
+3.2.1 Student Payment Management
+Features:
+
+Admin tracks student payments manually and marks payments as completed.
+
+Each course has its own fee structure, and discounts can be applied if needed.
+
+Financial records show a list of students with due payments and those who have completed payments.
+
+3.2.2 Project Income Tracking
+Features:
+
+Admin and finance team track income generated from each project, though project payments are not linked to milestones.
+
+3.2.3 Expense Tracking
+Features:
+
+Finance team can categorize and track expenses (e.g., operational costs, marketing, salaries).
+
+Categories can be dynamically added and modified.
+
+3.2.4 Reports & Analytics
+Features:
+
+Financial KPIs: Revenue, expenses, profit margins.
+
+Generate monthly and yearly financial reports for both LMS and Project Management System.
+
+Ability to generate summary reports of course income and project income.
+
+4. Database Design:
+Here are some database tables and fields based on your requirements:
+
+4.1 LMS Database
+Table: students
+
+Field Name	Data Type	Description
+student_id	INT (Primary Key)	Unique identifier for each student
+name	VARCHAR(255)	Full name of the student
+email	VARCHAR(255)	Student's email address
+enrollment_date	DATETIME	Date when the student enrolled
+status	ENUM('active', 'inactive')	Status of the student’s account
+Table: courses
+
+Field Name	Data Type	Description
+course_id	INT (Primary Key)	Unique identifier for each course
+title	VARCHAR(255)	Title of the course
+description	TEXT	Description of the course
+fee	DECIMAL(10,2)	Course fee
+Table: enrollments
+
+Field Name	Data Type	Description
+enrollment_id	INT (Primary Key)	Unique identifier for enrollment
+student_id	INT (Foreign Key)	Linked to students.student_id
+course_id	INT (Foreign Key)	Linked to courses.course_id
+enrollment_date	DATETIME	Date when the student was enrolled in the course
+Table: quizzes
+
+Field Name	Data Type	Description
+quiz_id	INT (Primary Key)	Unique identifier for each quiz
+course_id	INT (Foreign Key)	Linked to courses.course_id
+title	VARCHAR(255)	Title of the quiz
+questions	TEXT	List of questions (JSON or formatted text)
+Table: quiz_results
+
+Field Name	Data Type	Description
+result_id	INT (Primary Key)	Unique identifier for each result
+quiz_id	INT (Foreign Key)	Linked to quizzes.quiz_id
+student_id	INT (Foreign Key)	Linked to students.student_id
+score	DECIMAL(5,2)	Student’s quiz score
+4.2 Project Management Database
+Table: projects
+
+Field Name	Data Type	Description
+project_id	INT (Primary Key)	Unique identifier for each project
+client_id	INT (Foreign Key)	Linked to clients.client_id
+title	VARCHAR(255)	Title of the project
+budget	DECIMAL(10,2)	Budget allocated for the project
+start_date	DATETIME	Project start date
+end_date	DATETIME	Expected project completion date
+Table: tasks
+
+Field Name	Data Type	Description
+task_id	INT (Primary Key)	Unique identifier for each task
+project_id	INT (Foreign Key)	Linked to projects.project_id
+title	VARCHAR(255)	Title of the task
+assigned_to	INT (Foreign Key)	Linked to employees.employee_id
+status	ENUM('assigned', 'in-progress', 'completed')	Current status of the task
+Table: employees
+
+Field Name	Data Type	Description
+employee_id	INT (Primary Key)	Unique identifier for each employee
+name	VARCHAR(255)	Name of the employee
+email	VARCHAR(255)	Employee’s email
+Workflow Scenario:
+Scenario: "John’s Course Enrollment and Project Assignment"
+
+Course Enrollment:
+
+John comes to the office and provides his payment for course access.
+
+Admin logs into the LMS, manually adds John’s details in the system (students table).
+
+Admin assigns John to the “Advanced Web Development” course via the enrollments table.
+
+John can now view all course content (including embedded YouTube videos and PDFs).
+
+Quiz and Feedback:
+
+Instructor uploads a quiz for the “Web Development” chapter.
+
+John takes the quiz. The system automatically grades the quiz and stores the result in the quiz_results table.
+
+John can view the feedback and grade for the quiz.
+
+Project Management:
+
+Admin creates a software project for a new client and sets the project budget.
+
+Project Manager assigns tasks to employees for specific milestones.
+
+Employees work on tasks, and progress is tracked. Each task's completion is updated, and employees' tasks are visible only to them.
