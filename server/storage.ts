@@ -11,8 +11,12 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { pool, db } from "./db";
+import { eq, desc, and, asc } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // User management
@@ -595,4 +599,381 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.SessionStore;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true
+    });
+  }
+
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+  
+  async getUsersByRole(role: UserRole): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.role, role));
+  }
+
+  // Course methods
+  async createCourse(course: InsertCourse): Promise<Course> {
+    const [newCourse] = await db.insert(courses).values(course).returning();
+    return newCourse;
+  }
+
+  async getCourse(id: number): Promise<Course | undefined> {
+    const [course] = await db.select().from(courses).where(eq(courses.id, id));
+    return course || undefined;
+  }
+
+  async getAllCourses(): Promise<Course[]> {
+    return await db.select().from(courses);
+  }
+
+  async updateCourse(id: number, courseUpdate: Partial<InsertCourse>): Promise<Course | undefined> {
+    const [updatedCourse] = await db
+      .update(courses)
+      .set(courseUpdate)
+      .where(eq(courses.id, id))
+      .returning();
+    return updatedCourse || undefined;
+  }
+
+  async deleteCourse(id: number): Promise<boolean> {
+    const result = await db.delete(courses).where(eq(courses.id, id));
+    return !!result;
+  }
+
+  // Course content methods
+  async createCourseContent(content: InsertCourseContent): Promise<CourseContent> {
+    const [newContent] = await db.insert(courseContents).values(content).returning();
+    return newContent;
+  }
+
+  async getCourseContent(id: number): Promise<CourseContent | undefined> {
+    const [content] = await db.select().from(courseContents).where(eq(courseContents.id, id));
+    return content || undefined;
+  }
+
+  async getCourseContentsByCourse(courseId: number): Promise<CourseContent[]> {
+    return await db.select().from(courseContents).where(eq(courseContents.courseId, courseId)).orderBy(asc(courseContents.order));
+  }
+
+  async updateCourseContent(id: number, contentUpdate: Partial<InsertCourseContent>): Promise<CourseContent | undefined> {
+    const [updatedContent] = await db
+      .update(courseContents)
+      .set(contentUpdate)
+      .where(eq(courseContents.id, id))
+      .returning();
+    return updatedContent || undefined;
+  }
+
+  async deleteCourseContent(id: number): Promise<boolean> {
+    const result = await db.delete(courseContents).where(eq(courseContents.id, id));
+    return !!result;
+  }
+
+  // Enrollment methods
+  async createEnrollment(enrollment: InsertEnrollment): Promise<Enrollment> {
+    const [newEnrollment] = await db.insert(enrollments).values(enrollment).returning();
+    return newEnrollment;
+  }
+
+  async getEnrollment(id: number): Promise<Enrollment | undefined> {
+    const [enrollment] = await db.select().from(enrollments).where(eq(enrollments.id, id));
+    return enrollment || undefined;
+  }
+
+  async getEnrollmentsByStudent(studentId: number): Promise<Enrollment[]> {
+    return await db.select().from(enrollments).where(eq(enrollments.studentId, studentId));
+  }
+
+  async getEnrollmentsByCourse(courseId: number): Promise<Enrollment[]> {
+    return await db.select().from(enrollments).where(eq(enrollments.courseId, courseId));
+  }
+
+  async updateEnrollment(id: number, enrollmentUpdate: Partial<InsertEnrollment>): Promise<Enrollment | undefined> {
+    const [updatedEnrollment] = await db
+      .update(enrollments)
+      .set(enrollmentUpdate)
+      .where(eq(enrollments.id, id))
+      .returning();
+    return updatedEnrollment || undefined;
+  }
+
+  async deleteEnrollment(id: number): Promise<boolean> {
+    const result = await db.delete(enrollments).where(eq(enrollments.id, id));
+    return !!result;
+  }
+
+  // Quiz methods
+  async createQuiz(quiz: InsertQuiz): Promise<Quiz> {
+    const [newQuiz] = await db.insert(quizzes).values(quiz).returning();
+    return newQuiz;
+  }
+
+  async getQuiz(id: number): Promise<Quiz | undefined> {
+    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, id));
+    return quiz || undefined;
+  }
+
+  async getQuizzesByCourse(courseId: number): Promise<Quiz[]> {
+    return await db.select().from(quizzes).where(eq(quizzes.courseId, courseId));
+  }
+
+  async updateQuiz(id: number, quizUpdate: Partial<InsertQuiz>): Promise<Quiz | undefined> {
+    const [updatedQuiz] = await db
+      .update(quizzes)
+      .set(quizUpdate)
+      .where(eq(quizzes.id, id))
+      .returning();
+    return updatedQuiz || undefined;
+  }
+
+  async deleteQuiz(id: number): Promise<boolean> {
+    const result = await db.delete(quizzes).where(eq(quizzes.id, id));
+    return !!result;
+  }
+
+  // Quiz question methods
+  async createQuizQuestion(question: InsertQuizQuestion): Promise<QuizQuestion> {
+    const [newQuestion] = await db.insert(quizQuestions).values(question).returning();
+    return newQuestion;
+  }
+
+  async getQuizQuestion(id: number): Promise<QuizQuestion | undefined> {
+    const [question] = await db.select().from(quizQuestions).where(eq(quizQuestions.id, id));
+    return question || undefined;
+  }
+
+  async getQuizQuestionsByQuiz(quizId: number): Promise<QuizQuestion[]> {
+    return await db.select().from(quizQuestions).where(eq(quizQuestions.quizId, quizId)).orderBy(asc(quizQuestions.order));
+  }
+
+  async updateQuizQuestion(id: number, questionUpdate: Partial<InsertQuizQuestion>): Promise<QuizQuestion | undefined> {
+    const [updatedQuestion] = await db
+      .update(quizQuestions)
+      .set(questionUpdate)
+      .where(eq(quizQuestions.id, id))
+      .returning();
+    return updatedQuestion || undefined;
+  }
+
+  async deleteQuizQuestion(id: number): Promise<boolean> {
+    const result = await db.delete(quizQuestions).where(eq(quizQuestions.id, id));
+    return !!result;
+  }
+
+  // Quiz result methods
+  async createQuizResult(result: InsertQuizResult): Promise<QuizResult> {
+    const [newResult] = await db.insert(quizResults).values(result).returning();
+    return newResult;
+  }
+
+  async getQuizResult(id: number): Promise<QuizResult | undefined> {
+    const [result] = await db.select().from(quizResults).where(eq(quizResults.id, id));
+    return result || undefined;
+  }
+
+  async getQuizResultsByQuiz(quizId: number): Promise<QuizResult[]> {
+    return await db.select().from(quizResults).where(eq(quizResults.quizId, quizId));
+  }
+
+  async getQuizResultsByStudent(studentId: number): Promise<QuizResult[]> {
+    return await db.select().from(quizResults).where(eq(quizResults.studentId, studentId));
+  }
+
+  // Comment methods
+  async createComment(comment: InsertComment): Promise<Comment> {
+    const [newComment] = await db.insert(comments).values(comment).returning();
+    return newComment;
+  }
+
+  async getComment(id: number): Promise<Comment | undefined> {
+    const [comment] = await db.select().from(comments).where(eq(comments.id, id));
+    return comment || undefined;
+  }
+
+  async getCommentsByContent(contentId: number): Promise<Comment[]> {
+    return await db.select().from(comments).where(eq(comments.contentId, contentId));
+  }
+
+  // Project methods
+  async createProject(project: InsertProject): Promise<Project> {
+    const [newProject] = await db.insert(projects).values(project).returning();
+    return newProject;
+  }
+
+  async getProject(id: number): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project || undefined;
+  }
+
+  async getAllProjects(): Promise<Project[]> {
+    return await db.select().from(projects);
+  }
+
+  async getProjectsByManager(managerId: number): Promise<Project[]> {
+    return await db.select().from(projects).where(eq(projects.managerId, managerId));
+  }
+
+  async updateProject(id: number, projectUpdate: Partial<InsertProject>): Promise<Project | undefined> {
+    const [updatedProject] = await db
+      .update(projects)
+      .set(projectUpdate)
+      .where(eq(projects.id, id))
+      .returning();
+    return updatedProject || undefined;
+  }
+
+  async deleteProject(id: number): Promise<boolean> {
+    const result = await db.delete(projects).where(eq(projects.id, id));
+    return !!result;
+  }
+
+  // Client methods
+  async createClient(client: InsertClient): Promise<Client> {
+    const [newClient] = await db.insert(clients).values(client).returning();
+    return newClient;
+  }
+
+  async getClient(id: number): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client || undefined;
+  }
+
+  async getAllClients(): Promise<Client[]> {
+    return await db.select().from(clients);
+  }
+
+  async updateClient(id: number, clientUpdate: Partial<InsertClient>): Promise<Client | undefined> {
+    const [updatedClient] = await db
+      .update(clients)
+      .set(clientUpdate)
+      .where(eq(clients.id, id))
+      .returning();
+    return updatedClient || undefined;
+  }
+
+  async deleteClient(id: number): Promise<boolean> {
+    const result = await db.delete(clients).where(eq(clients.id, id));
+    return !!result;
+  }
+
+  // Milestone methods
+  async createMilestone(milestone: InsertMilestone): Promise<Milestone> {
+    const [newMilestone] = await db.insert(milestones).values(milestone).returning();
+    return newMilestone;
+  }
+
+  async getMilestone(id: number): Promise<Milestone | undefined> {
+    const [milestone] = await db.select().from(milestones).where(eq(milestones.id, id));
+    return milestone || undefined;
+  }
+
+  async getMilestonesByProject(projectId: number): Promise<Milestone[]> {
+    return await db.select().from(milestones).where(eq(milestones.projectId, projectId)).orderBy(asc(milestones.order));
+  }
+
+  async updateMilestone(id: number, milestoneUpdate: Partial<InsertMilestone>): Promise<Milestone | undefined> {
+    const [updatedMilestone] = await db
+      .update(milestones)
+      .set(milestoneUpdate)
+      .where(eq(milestones.id, id))
+      .returning();
+    return updatedMilestone || undefined;
+  }
+
+  async deleteMilestone(id: number): Promise<boolean> {
+    const result = await db.delete(milestones).where(eq(milestones.id, id));
+    return !!result;
+  }
+
+  // Task methods
+  async createTask(task: InsertTask): Promise<Task> {
+    const [newTask] = await db.insert(tasks).values(task).returning();
+    return newTask;
+  }
+
+  async getTask(id: number): Promise<Task | undefined> {
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+    return task || undefined;
+  }
+
+  async getTasksByProject(projectId: number): Promise<Task[]> {
+    return await db.select().from(tasks).where(eq(tasks.projectId, projectId));
+  }
+
+  async getTasksByMilestone(milestoneId: number): Promise<Task[]> {
+    return await db.select().from(tasks).where(eq(tasks.milestoneId, milestoneId));
+  }
+
+  async getTasksByEmployee(employeeId: number): Promise<Task[]> {
+    return await db.select().from(tasks).where(eq(tasks.assignedTo, employeeId));
+  }
+
+  async updateTask(id: number, taskUpdate: Partial<InsertTask>): Promise<Task | undefined> {
+    const [updatedTask] = await db
+      .update(tasks)
+      .set(taskUpdate)
+      .where(eq(tasks.id, id))
+      .returning();
+    return updatedTask || undefined;
+  }
+
+  async deleteTask(id: number): Promise<boolean> {
+    const result = await db.delete(tasks).where(eq(tasks.id, id));
+    return !!result;
+  }
+
+  // Expense methods
+  async createExpense(expense: InsertExpense): Promise<Expense> {
+    const [newExpense] = await db.insert(expenses).values(expense).returning();
+    return newExpense;
+  }
+
+  async getExpense(id: number): Promise<Expense | undefined> {
+    const [expense] = await db.select().from(expenses).where(eq(expenses.id, id));
+    return expense || undefined;
+  }
+
+  async getAllExpenses(): Promise<Expense[]> {
+    return await db.select().from(expenses);
+  }
+
+  async getExpensesByCategory(category: string): Promise<Expense[]> {
+    return await db.select().from(expenses).where(eq(expenses.category, category));
+  }
+
+  // Project payment methods
+  async createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment> {
+    const [newPayment] = await db.insert(projectPayments).values(payment).returning();
+    return newPayment;
+  }
+
+  async getProjectPayment(id: number): Promise<ProjectPayment | undefined> {
+    const [payment] = await db.select().from(projectPayments).where(eq(projectPayments.id, id));
+    return payment || undefined;
+  }
+
+  async getProjectPaymentsByProject(projectId: number): Promise<ProjectPayment[]> {
+    return await db.select().from(projectPayments).where(eq(projectPayments.projectId, projectId));
+  }
+}
+
+// Use the database storage implementation
+export const storage = new DatabaseStorage();
