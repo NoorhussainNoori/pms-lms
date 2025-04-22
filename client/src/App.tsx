@@ -2,11 +2,15 @@ import { Switch, Route } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import NotFound from "@/pages/not-found";
-import TempAuthPage from "@/pages/temp-auth-page";
+import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import CoursesPage from "@/pages/courses-page";
 import StudentsPage from "@/pages/students-page-fixed";
+import { ProtectedRoute } from "@/lib/protected-route";
+import { AuthProvider } from "@/hooks/use-auth";
+import { queryClient } from "@/lib/queryClient";
 
 // Import other pages as they are created
 // import QuizzesPage from "@/pages/quizzes-page";
@@ -22,27 +26,27 @@ import StudentsPage from "@/pages/students-page-fixed";
 function Router() {
   return (
     <Switch>
-      <Route path="/auth" component={TempAuthPage} />
+      <Route path="/auth" component={AuthPage} />
       
       {/* LMS Routes */}
-      <Route path="/" component={Dashboard} />
-      <Route path="/courses" component={CoursesPage} />
-      <Route path="/students" component={StudentsPage} />
+      <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/courses" component={CoursesPage} />
+      <ProtectedRoute path="/students" component={StudentsPage} />
       
       {/* These routes will be activated when their components are created */}
-      {/* <Route path="/quizzes" component={QuizzesPage} /> */}
-      {/* <Route path="/instructors" component={InstructorsPage} /> */}
+      {/* <ProtectedRoute path="/quizzes" component={QuizzesPage} /> */}
+      {/* <ProtectedRoute path="/instructors" component={InstructorsPage} /> */}
       
       {/* Project Management Routes */}
-      {/* <Route path="/projects" component={ProjectsPage} /> */}
-      {/* <Route path="/tasks" component={TasksPage} /> */}
-      {/* <Route path="/employees" component={EmployeesPage} /> */}
-      {/* <Route path="/clients" component={ClientsPage} /> */}
+      {/* <ProtectedRoute path="/projects" component={ProjectsPage} /> */}
+      {/* <ProtectedRoute path="/tasks" component={TasksPage} /> */}
+      {/* <ProtectedRoute path="/employees" component={EmployeesPage} /> */}
+      {/* <ProtectedRoute path="/clients" component={ClientsPage} /> */}
       
       {/* Financial Routes */}
-      {/* <Route path="/payments" component={PaymentsPage} /> */}
-      {/* <Route path="/expenses" component={ExpensesPage} /> */}
-      {/* <Route path="/reports" component={ReportsPage} /> */}
+      {/* <ProtectedRoute path="/payments" component={PaymentsPage} /> */}
+      {/* <ProtectedRoute path="/expenses" component={ExpensesPage} /> */}
+      {/* <ProtectedRoute path="/reports" component={ReportsPage} /> */}
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
@@ -52,12 +56,16 @@ function Router() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light">
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light">
+        <TooltipProvider>
+          <AuthProvider>
+            <Toaster />
+            <Router />
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

@@ -1,6 +1,6 @@
 import { Activity, Book, Building, CreditCard, DollarSign, LayoutDashboard, Layers, PieChart, User, Users, Wallet } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import MainLayout from "../components/layout/main-layout";
+import MainLayout from "../components/layout/main-layout-new";
 
 export default function Dashboard() {
   // Mock data for the dashboard

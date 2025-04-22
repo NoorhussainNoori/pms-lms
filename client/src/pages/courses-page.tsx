@@ -24,7 +24,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeftRight, Book, Edit, FileText, Loader2, Plus, Trash, User } from "lucide-react";
-import MainLayout from "../components/layout/main-layout";
+import MainLayout from "../components/layout/main-layout-new";
 
 // Mock data for development
 const COURSES = [

@@ -40,7 +40,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, Loader2, MoreHorizontal, Plus, Search, UserPlus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import MainLayout from "../components/layout/main-layout";
+import MainLayout from "../components/layout/main-layout-new";
 
 // Mock student data for development
 const STUDENTS = [
