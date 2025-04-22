@@ -1,206 +1,301 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/use-auth";
-import { UserRole } from "@shared/schema";
-import MainLayout from "@/components/layout/main-layout";
-import CourseForm from "@/components/course/course-form";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Code, Palette, FileCode } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { 
+  Form, 
+  FormControl, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { ArrowLeftRight, Book, Edit, FileText, Loader2, Plus, Trash, User } from "lucide-react";
+
+// Mock data for development
+const COURSES = [
+  {
+    id: 1,
+    title: "Web Development Fundamentals",
+    description: "Learn HTML, CSS, and JavaScript basics for web development.",
+    fee: 99.99,
+    enrolledStudents: 24,
+    materials: 12,
+    quizzes: 5
+  },
+  {
+    id: 2,
+    title: "Advanced React & Redux",
+    description: "Master modern React.js with Redux state management.",
+    fee: 129.99,
+    enrolledStudents: 18,
+    materials: 15,
+    quizzes: 8
+  },
+  {
+    id: 3,
+    title: "Full Stack Development",
+    description: "Build complete web applications with front-end and back-end technologies.",
+    fee: 149.99,
+    enrolledStudents: 15,
+    materials: 20,
+    quizzes: 10
+  },
+  {
+    id: 4,
+    title: "UX/UI Design Principles",
+    description: "Learn design thinking and create user-friendly interfaces.",
+    fee: 89.99,
+    enrolledStudents: 30,
+    materials: 18,
+    quizzes: 6
+  }
+];
+
+// Form schema for adding/editing courses
+const courseSchema = z.object({
+  title: z.string().min(3, {
+    message: "Title must be at least 3 characters long",
+  }),
+  description: z.string().min(10, {
+    message: "Description must be at least 10 characters long",
+  }),
+  fee: z.coerce.number().positive({
+    message: "Fee must be a positive number",
+  }),
+});
+
+type CourseFormValues = z.infer<typeof courseSchema>;
+
+import MainLayout from "../components/layout/main-layout";
 
 export default function CoursesPage() {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [courses, setCourses] = useState(COURSES);
+  const [isAddingCourse, setIsAddingCourse] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<typeof COURSES[0] | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: courses, isLoading } = useQuery({
-    queryKey: ["/api/courses"],
-  });
-
-  const { data: instructors } = useQuery({
-    queryKey: ["/api/users?role=instructor"],
-    enabled: user?.role === UserRole.ADMIN,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/courses/${id}`);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Course deleted",
-        description: "The course has been successfully deleted",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `Failed to delete course: ${error.message}`,
-        variant: "destructive",
-      });
+  const form = useForm<CourseFormValues>({
+    resolver: zodResolver(courseSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      fee: 0,
     },
   });
 
-  const getCourseIcon = (title: string) => {
-    if (title.toLowerCase().includes("web")) return <Code className="h-5 w-5 text-primary" />;
-    if (title.toLowerCase().includes("design")) return <Palette className="h-5 w-5 text-purple-600" />;
-    return <FileCode className="h-5 w-5 text-blue-500" />;
-  };
+  function resetForm() {
+    form.reset({
+      title: "",
+      description: "",
+      fee: 0,
+    });
+    setEditingCourse(null);
+  }
 
-  const getInstructorName = (instructorId: number) => {
-    if (!instructors) return "Loading...";
-    const instructor = instructors.find((i: any) => i.id === instructorId);
-    return instructor ? instructor.name : "Unassigned";
-  };
+  function onSubmit(values: CourseFormValues) {
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      if (editingCourse) {
+        // Update existing course
+        setCourses(courses.map(course => 
+          course.id === editingCourse.id 
+            ? { ...course, ...values } 
+            : course
+        ));
+      } else {
+        // Add new course
+        const newCourse = {
+          id: courses.length + 1,
+          ...values,
+          enrolledStudents: 0,
+          materials: 0,
+          quizzes: 0
+        };
+        setCourses([...courses, newCourse]);
+      }
+      
+      setIsSubmitting(false);
+      setIsAddingCourse(false);
+      resetForm();
+    }, 1000);
+  }
 
-  const handleDelete = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this course?")) {
-      deleteMutation.mutate(id);
+  function handleEditCourse(course: typeof COURSES[0]) {
+    form.reset({
+      title: course.title,
+      description: course.description,
+      fee: course.fee,
+    });
+    setEditingCourse(course);
+    setIsAddingCourse(true);
+  }
+
+  function handleDeleteCourse(courseId: number) {
+    if (confirm('Are you sure you want to delete this course?')) {
+      setCourses(courses.filter(course => course.id !== courseId));
     }
-  };
-
-  const onCloseDialog = () => {
-    setIsDialogOpen(false);
-    queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
-  };
-
-  const canManageCourses = user && (user.role === UserRole.ADMIN || user.role === UserRole.INSTRUCTOR);
+  }
 
   return (
-    <MainLayout module="lms">
-      <div className="mb-6">
+    <MainLayout>
+      <div className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-medium text-gray-800 dark:text-gray-200">Courses</h2>
-          {canManageCourses && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <span className="material-icons text-sm">add</span>
-                  Add Course
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[550px]">
-                <DialogHeader>
-                  <DialogTitle>Add New Course</DialogTitle>
-                </DialogHeader>
-                <CourseForm onSuccess={onCloseDialog} instructors={instructors} />
-              </DialogContent>
-            </Dialog>
-          )}
+          <div>
+            <h1 className="text-3xl font-bold">Courses</h1>
+            <p className="text-muted-foreground">Manage your educational courses and materials</p>
+          </div>
+          <Dialog open={isAddingCourse} onOpenChange={setIsAddingCourse}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Course
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[550px]">
+              <DialogHeader>
+                <DialogTitle>{editingCourse ? 'Edit Course' : 'Add New Course'}</DialogTitle>
+                <DialogDescription>
+                  {editingCourse 
+                    ? 'Edit the details of the existing course.' 
+                    : 'Fill out the form below to create a new course.'}
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Course Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Web Development Fundamentals" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Provide a detailed description of the course" 
+                            className="h-24" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="fee"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Course Fee ($)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            step="0.01" 
+                            placeholder="99.99" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setIsAddingCourse(false);
+                      resetForm();
+                    }}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {editingCourse ? 'Saving...' : 'Creating...'}
+                        </>
+                      ) : (
+                        editingCourse ? 'Save Changes' : 'Create Course'
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Course Management</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courses.map(course => (
+            <Card key={course.id} className="overflow-hidden">
+              <CardHeader className="bg-muted">
+                <CardTitle>{course.title}</CardTitle>
+                <CardDescription>${course.fee.toFixed(2)}</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <p className="mb-4">{course.description}</p>
+                <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
+                  <div className="flex items-center">
+                    <User className="h-4 w-4 mr-1" />
+                    <span>{course.enrolledStudents} students</span>
+                  </div>
+                  <div className="flex items-center">
+                    <FileText className="h-4 w-4 mr-1" />
+                    <span>{course.materials} materials</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Book className="h-4 w-4 mr-1" />
+                    <span>{course.quizzes} quizzes</span>
+                  </div>
                 </div>
-              ) : courses && courses.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Course Name</TableHead>
-                      <TableHead>Instructor</TableHead>
-                      <TableHead>Students</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Fee</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {courses.map((course: any) => (
-                      <TableRow key={course.id}>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
-                              {getCourseIcon(course.title)}
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium">{course.title}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">{course.description?.substring(0, 30) || "No description"}</div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">{course.instructorId ? getInstructorName(course.instructorId) : "Unassigned"}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">--</div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                            Active
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">${parseFloat(course.fee).toFixed(2)}</div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {canManageCourses && (
-                            <>
-                              <Button variant="ghost" size="sm" className="text-primary mr-2">
-                                Edit
-                              </Button>
-                              {user?.role === UserRole.ADMIN && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                                  onClick={() => handleDelete(course.id)}
-                                >
-                                  Delete
-                                </Button>
-                              )}
-                            </>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                          >
-                            View
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <p>No courses found. Add a course to get started.</p>
+                
+                <div className="flex items-center justify-between mt-6">
+                  <Button variant="outline" size="sm" onClick={() => handleEditCourse(course)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <ArrowLeftRight className="h-4 w-4 mr-2" />
+                    Manage
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDeleteCourse(course.id)}>
+                    <Trash className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </MainLayout>
   );

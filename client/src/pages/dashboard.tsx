@@ -1,553 +1,399 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/use-auth";
-import MainLayout from "@/components/layout/main-layout";
-import StatCard from "@/components/dashboard/stat-card";
-import ActivityList, { ActivityItem } from "@/components/dashboard/activity-list";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { UserRole } from "@shared/schema";
-import { 
-  Users, 
-  GraduationCap, 
-  FlagTriangleRight, 
-  HelpCircle, 
-  Briefcase,
-  CheckSquare,
-  HardHat,
-  PieChart,
-  DollarSign,
-  Receipt,
-  School,
-  Building
-} from "lucide-react";
+import { Activity, Book, Building, CreditCard, DollarSign, LayoutDashboard, Layers, PieChart, User, Users, Wallet } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import MainLayout from "../components/layout/main-layout";
 
 export default function Dashboard() {
-  const { user } = useAuth();
-  const [moduleView, setModuleView] = useState<"lms" | "projects" | "finance">("lms");
-
-  const { data: students, isLoading: isLoadingStudents } = useQuery({
-    queryKey: ["/api/users?role=student"],
-    enabled: user?.role === UserRole.ADMIN || user?.role === UserRole.INSTRUCTOR
-  });
-
-  const { data: courses, isLoading: isLoadingCourses } = useQuery({
-    queryKey: ["/api/courses"],
-    enabled: !!user
-  });
-
-  const { data: projects, isLoading: isLoadingProjects } = useQuery({
-    queryKey: ["/api/projects"],
-    enabled: user?.role === UserRole.ADMIN || user?.role === UserRole.PROJECT_MANAGER || user?.role === UserRole.EMPLOYEE
-  });
-
-  const { data: tasks, isLoading: isLoadingTasks } = useQuery({
-    queryKey: [user?.role === UserRole.EMPLOYEE ? `/api/employees/${user?.id}/tasks` : "/api/tasks"],
-    enabled: user?.role === UserRole.ADMIN || user?.role === UserRole.PROJECT_MANAGER || user?.role === UserRole.EMPLOYEE
-  });
-
-  // Render appropriate dashboard based on user role
-  useEffect(() => {
-    if (user) {
-      if (user.role === UserRole.STUDENT || user.role === UserRole.INSTRUCTOR) {
-        setModuleView("lms");
-      } else if (user.role === UserRole.PROJECT_MANAGER || user.role === UserRole.EMPLOYEE) {
-        setModuleView("projects");
-      } else if (user.role === UserRole.FINANCE) {
-        setModuleView("finance");
-      }
-    }
-  }, [user]);
-
-  // Create recent enrollments items for LMS dashboard
-  const recentEnrollments: ActivityItem[] = [
-    {
-      id: 1,
-      title: "Sarah Johnson",
-      description: "Advanced Web Development",
-      date: "Today",
-      avatarText: "SJ"
-    },
-    {
-      id: 2,
-      title: "Michael Chen",
-      description: "UX Design Fundamentals",
-      date: "Yesterday",
-      avatarText: "MC"
-    },
-    {
-      id: 3,
-      title: "David Smith",
-      description: "JavaScript Mastery",
-      date: "2 days ago",
-      avatarText: "DS"
-    }
-  ];
-
-  // Create recent quiz results for LMS dashboard
-  const recentQuizResults: ActivityItem[] = [
-    {
-      id: 1,
-      title: "HTML Basics Quiz",
-      description: "Emma Wilson - 92%",
-      date: "",
-      status: "success",
-      avatarText: "HQ"
-    },
-    {
-      id: 2,
-      title: "CSS Layouts Quiz",
-      description: "James Brown - 65%",
-      date: "",
-      status: "error",
-      avatarText: "CQ"
-    },
-    {
-      id: 3,
-      title: "JavaScript Basics Quiz",
-      description: "Laura Miller - 88%",
-      date: "",
-      status: "success",
-      avatarText: "JQ"
-    }
-  ];
-
-  // Create upcoming tasks for LMS dashboard
-  const upcomingTasks: ActivityItem[] = [
-    {
-      id: 1,
-      title: "Grade Final Projects",
-      description: "Web Development Course",
-      date: "Due Today",
-      status: "error",
-      avatarText: "GF"
-    },
-    {
-      id: 2,
-      title: "Create New Quiz",
-      description: "JavaScript Mastery",
-      date: "Due Tomorrow",
-      status: "warning",
-      avatarText: "CQ"
-    },
-    {
-      id: 3,
-      title: "Upload CSS Tutorial",
-      description: "UX Design Fundamentals",
-      date: "In 3 days",
-      status: "info",
-      avatarText: "UT"
-    }
-  ];
-
-  // Create project tasks for Project dashboard
-  const projectTaskItems: ActivityItem[] = [
-    {
-      id: 1,
-      title: "Design homepage mockup",
-      description: "E-commerce Website",
-      date: "Due Oct 12",
-      status: "warning",
-      avatarText: "DH"
-    },
-    {
-      id: 2,
-      title: "API integration for user auth",
-      description: "Mobile App",
-      date: "Due Oct 15",
-      status: "warning",
-      avatarText: "AI"
-    },
-    {
-      id: 3,
-      title: "Product listing page",
-      description: "E-commerce Website",
-      date: "Due Oct 18",
-      status: "info",
-      avatarText: "PL"
-    }
-  ];
-
-  // Create student payments for Finance dashboard
-  const studentPayments: ActivityItem[] = [
-    {
-      id: 1,
-      title: "Sarah Johnson",
-      description: "Advanced Web Development - $199.99",
-      date: "Oct 5, 2023",
-      status: "success",
-      avatarText: "SJ"
-    },
-    {
-      id: 2,
-      title: "Michael Chen",
-      description: "UX Design Fundamentals - $249.99",
-      date: "Due: Oct 15, 2023",
-      status: "error",
-      avatarText: "MC"
-    },
-    {
-      id: 3,
-      title: "David Smith",
-      description: "JavaScript Mastery - $129.99",
-      date: "Oct 2, 2023",
-      status: "success",
-      avatarText: "DS"
-    }
-  ];
-
-  // Create recent expenses for Finance dashboard
-  const recentExpenses: ActivityItem[] = [
-    {
-      id: 1,
-      title: "Office Supplies",
-      description: "Operating Expense - $423.45",
-      date: "Oct 8, 2023",
-      status: "error",
-      avatarText: "OS"
-    },
-    {
-      id: 2,
-      title: "Instructor Salaries",
-      description: "Payroll - $5,842.30",
-      date: "Oct 5, 2023",
-      status: "error",
-      avatarText: "IS"
-    },
-    {
-      id: 3,
-      title: "Software Subscriptions",
-      description: "Technology - $1,256.99",
-      date: "Oct 1, 2023",
-      status: "error",
-      avatarText: "SS"
-    }
-  ];
+  // Mock data for the dashboard
+  const stats = {
+    totalStudents: 154,
+    totalCourses: 12,
+    totalInstructors: 8,
+    totalProjects: 15,
+    totalEmployees: 24,
+    totalClients: 18,
+    monthlyIncome: 15450,
+    monthlyExpenses: 7820,
+    activeQuizzes: 32,
+    activeTasks: 87,
+    completionRate: 78,
+    pendingPayments: 12
+  };
 
   return (
-    <MainLayout module={moduleView}>
-      {/* LMS Dashboard */}
-      {moduleView === "lms" && (
-        <div className="mb-6">
-          <h2 className="text-2xl font-medium text-gray-800 dark:text-gray-200 mb-4">LMS Dashboard</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard
+    <MainLayout>
+      <div className="p-6">
+        <div className="flex flex-col gap-4 md:gap-8">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Overview of your LMS and Project Management System
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatsCard 
               title="Total Students"
-              value={isLoadingStudents ? "..." : students?.length || 156}
-              icon={Users}
-              iconColor="text-primary"
-              iconBgColor="bg-blue-100"
-              trend={{ value: "12% increase this month", isPositive: true }}
+              value={stats.totalStudents}
+              description="Active enrollments"
+              icon={<Users className="h-5 w-5 text-muted-foreground" />}
             />
-            <StatCard
-              title="Active Courses"
-              value={isLoadingCourses ? "..." : courses?.length || 24}
-              icon={GraduationCap}
-              iconColor="text-success"
-              iconBgColor="bg-green-100"
-              trend={{ value: "3 new courses this month", isPositive: true }}
+            <StatsCard 
+              title="Total Courses"
+              value={stats.totalCourses}
+              description="Available courses"
+              icon={<Book className="h-5 w-5 text-muted-foreground" />}
             />
-            <StatCard
-              title="Course Completion"
-              value="78%"
-              icon={FlagTriangleRight}
-              iconColor="text-purple-600"
-              iconBgColor="bg-purple-100"
-              trend={{ value: "5% increase from last month", isPositive: true }}
-            />
-            <StatCard
-              title="Quiz Pass Rate"
-              value="82%"
-              icon={HelpCircle}
-              iconColor="text-yellow-600"
-              iconBgColor="bg-yellow-100"
-              trend={{ value: "3% decrease from last month", isPositive: false }}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <ActivityList 
-              title="Recent Enrollments" 
-              items={recentEnrollments}
-              viewAllUrl="/students"
-              isLoading={isLoadingStudents}
-            />
-            <ActivityList 
-              title="Recent Quiz Results" 
-              items={recentQuizResults}
-              viewAllUrl="/quizzes"
-            />
-            <ActivityList 
-              title="Upcoming Tasks" 
-              items={upcomingTasks}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Project Management Dashboard */}
-      {moduleView === "projects" && (
-        <div className="mb-6">
-          <h2 className="text-2xl font-medium text-gray-800 dark:text-gray-200 mb-4">Project Dashboard</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard
+            <StatsCard 
               title="Active Projects"
-              value={isLoadingProjects ? "..." : projects?.length || 12}
-              icon={Briefcase}
-              iconColor="text-primary"
-              iconBgColor="bg-blue-100"
-              trend={{ value: "3 new this month", isPositive: true }}
+              value={stats.totalProjects}
+              description="In progress"
+              icon={<Layers className="h-5 w-5 text-muted-foreground" />}
             />
-            <StatCard
-              title="Pending Tasks"
-              value={isLoadingTasks ? "..." : tasks?.filter(t => t.status !== "completed")?.length || 48}
-              icon={CheckSquare}
-              iconColor="text-orange-500"
-              iconBgColor="bg-orange-100"
-              trend={{ value: "12 tasks added this week", isPositive: false }}
-            />
-            <StatCard
-              title="Team Members"
-              value="18"
-              icon={HardHat}
-              iconColor="text-success"
-              iconBgColor="bg-green-100"
-              trend={{ value: "2 new hires this month", isPositive: true }}
-            />
-            <StatCard
-              title="Completion Rate"
-              value="72%"
-              icon={PieChart}
-              iconColor="text-purple-600"
-              iconBgColor="bg-purple-100"
-              trend={{ value: "8% increase from last month", isPositive: true }}
+            <StatsCard 
+              title="Total Income"
+              value={`$${stats.monthlyIncome}`}
+              description="Monthly revenue"
+              icon={<DollarSign className="h-5 w-5 text-muted-foreground" />}
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <ActivityList 
-              title="To Do"
-              items={projectTaskItems.filter(t => t.status === "warning")}
-              viewAllUrl="/tasks"
-              isLoading={isLoadingTasks}
-            />
-            <ActivityList 
-              title="In Progress"
-              items={projectTaskItems.filter(t => t.status === "info")}
-              viewAllUrl="/tasks"
-              isLoading={isLoadingTasks}
-            />
-            <ActivityList 
-              title="Completed"
-              items={[]}
-              viewAllUrl="/tasks"
-              isLoading={isLoadingTasks}
-              emptyMessage="No tasks completed yet"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Finance Dashboard */}
-      {moduleView === "finance" && (
-        <div className="mb-6">
-          <h2 className="text-2xl font-medium text-gray-800 dark:text-gray-200 mb-4">Finance Dashboard</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard
-              title="Total Revenue"
-              value="$65,248.30"
-              icon={DollarSign}
-              iconColor="text-success"
-              iconBgColor="bg-green-100"
-              trend={{ value: "12% increase from last month", isPositive: true }}
-            />
-            <StatCard
-              title="Total Expenses"
-              value="$35,127.84"
-              icon={Receipt}
-              iconColor="text-error"
-              iconBgColor="bg-red-100"
-              trend={{ value: "8% increase from last month", isPositive: false }}
-            />
-            <StatCard
-              title="Course Income"
-              value="$37,842.50"
-              icon={School}
-              iconColor="text-primary"
-              iconBgColor="bg-blue-100"
-              trend={{ value: "15% increase from last month", isPositive: true }}
-            />
-            <StatCard
-              title="Project Income"
-              value="$27,405.80"
-              icon={Building}
-              iconColor="text-purple-600"
-              iconBgColor="bg-purple-100"
-              trend={{ value: "9% increase from last month", isPositive: true }}
-            />
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-medium">Revenue & Expense Overview</h3>
-              <select className="border rounded-md text-sm px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600">
-                <option>This Year</option>
-                <option>Last Year</option>
-                <option>Last 6 Months</option>
-              </select>
-            </div>
-            <div className="h-72 flex items-center justify-center">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center text-gray-500 dark:text-gray-400">
-                  <BarChart3 className="h-16 w-16 mx-auto mb-2" />
-                  <p>Revenue & Expense Chart</p>
-                  <p className="text-sm text-gray-400 dark:text-gray-500">Showing monthly trends for current year</p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>LMS Overview</span>
+                  <LayoutDashboard className="h-5 w-5 text-muted-foreground" />
+                </CardTitle>
+                <CardDescription>
+                  Learning management statistics
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <Users className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Students
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {stats.totalStudents} total enrolled
+                      </p>
+                    </div>
+                    <div className="ml-auto font-bold">{stats.totalStudents}</div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <Book className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Courses
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {stats.totalCourses} active courses
+                      </p>
+                    </div>
+                    <div className="ml-auto font-bold">{stats.totalCourses}</div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Instructors
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Teaching staff
+                      </p>
+                    </div>
+                    <div className="ml-auto font-bold">{stats.totalInstructors}</div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <Activity className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Quizzes
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Active assessments
+                      </p>
+                    </div>
+                    <div className="ml-auto font-bold">{stats.activeQuizzes}</div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              </CardContent>
+            </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ActivityList 
-              title="Student Payment Status" 
-              items={studentPayments}
-              viewAllUrl="/payments"
-            />
-            <ActivityList 
-              title="Recent Expenses" 
-              items={recentExpenses}
-              viewAllUrl="/expenses"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Student Enrollment Section - visible only to admin users */}
-      {user?.role === UserRole.ADMIN && moduleView === "lms" && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
-          <div className="p-4 border-b dark:border-gray-700">
-            <h3 className="font-medium">Student Enrollment</h3>
-          </div>
-          <div className="p-4">
-            <div className="flex flex-col md:flex-row mb-4">
-              <div className="w-full md:w-1/2 md:pr-2 mb-4 md:mb-0">
-                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Add New Student</h4>
-                  <form className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs text-gray-700 dark:text-gray-400 mb-1">Full Name</label>
-                        <input 
-                          type="text" 
-                          className="w-full px-3 py-2 border dark:border-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-800 dark:text-gray-200" 
-                          placeholder="Enter student name" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-700 dark:text-gray-400 mb-1">Email Address</label>
-                        <input 
-                          type="email" 
-                          className="w-full px-3 py-2 border dark:border-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-800 dark:text-gray-200" 
-                          placeholder="Enter email address" 
-                        />
-                      </div>
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Project Management</span>
+                  <Layers className="h-5 w-5 text-muted-foreground" />
+                </CardTitle>
+                <CardDescription>
+                  Project and task statistics
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <Layers className="h-4 w-4 text-primary" />
                     </div>
-                    <div>
-                      <label className="block text-xs text-gray-700 dark:text-gray-400 mb-1">Select Course</label>
-                      <select className="w-full px-3 py-2 border dark:border-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 dark:text-gray-200">
-                        <option>Advanced Web Development</option>
-                        <option>UX Design Fundamentals</option>
-                        <option>JavaScript Mastery</option>
-                        <option>Python for Beginners</option>
-                      </select>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Projects
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Active initiatives
+                      </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs text-gray-700 dark:text-gray-400 mb-1">Payment Status</label>
-                        <select className="w-full px-3 py-2 border dark:border-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 dark:text-gray-200">
-                          <option>Completed</option>
-                          <option>Pending</option>
-                          <option>Partial</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-700 dark:text-gray-400 mb-1">Amount Paid ($)</label>
-                        <input 
-                          type="number" 
-                          className="w-full px-3 py-2 border dark:border-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-800 dark:text-gray-200" 
-                          placeholder="0.00" 
-                        />
-                      </div>
+                    <div className="ml-auto font-bold">{stats.totalProjects}</div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <Activity className="h-4 w-4 text-primary" />
                     </div>
-                    <Button className="w-full" type="submit">
-                      Add Student
-                    </Button>
-                  </form>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Tasks
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Assigned work items
+                      </p>
+                    </div>
+                    <div className="ml-auto font-bold">{stats.activeTasks}</div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <Users className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Employees
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Active team members
+                      </p>
+                    </div>
+                    <div className="ml-auto font-bold">{stats.totalEmployees}</div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <Building className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Clients
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Active customers
+                      </p>
+                    </div>
+                    <div className="ml-auto font-bold">{stats.totalClients}</div>
+                  </div>
                 </div>
-              </div>
-              <div className="w-full md:w-1/2 md:pl-2">
-                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg h-full">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Course Statistics</h4>
-                  <div className="space-y-4">
-                    {/* Advanced Web Development */}
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-xs font-medium">Advanced Web Development</span>
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">42 students</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div className="bg-primary h-2 rounded-full" style={{ width: '75%' }}></div>
-                      </div>
+              </CardContent>
+            </Card>
+
+            <Card className="col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Financial Overview</span>
+                  <PieChart className="h-5 w-5 text-muted-foreground" />
+                </CardTitle>
+                <CardDescription>
+                  Income and expenses summary
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <DollarSign className="h-4 w-4 text-primary" />
                     </div>
-                    
-                    {/* UX Design Fundamentals */}
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-xs font-medium">UX Design Fundamentals</span>
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">36 students</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div className="bg-primary h-2 rounded-full" style={{ width: '65%' }}></div>
-                      </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Monthly Income
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Total revenue
+                      </p>
                     </div>
-                    
-                    {/* JavaScript Mastery */}
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-xs font-medium">JavaScript Mastery</span>
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">28 students</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div className="bg-primary h-2 rounded-full" style={{ width: '50%' }}></div>
-                      </div>
+                    <div className="ml-auto font-bold">${stats.monthlyIncome}</div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <Wallet className="h-4 w-4 text-primary" />
                     </div>
-                    
-                    {/* Python for Beginners */}
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-xs font-medium">Python for Beginners</span>
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">54 students</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div className="bg-primary h-2 rounded-full" style={{ width: '90%' }}></div>
-                      </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Monthly Expenses
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Operating costs
+                      </p>
                     </div>
-                    
-                    <div className="pt-3 mt-3 border-t dark:border-gray-700">
-                      <Button variant="link" className="text-primary p-0">
-                        Generate Detailed Report
-                      </Button>
+                    <div className="ml-auto font-bold">${stats.monthlyExpenses}</div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <CreditCard className="h-4 w-4 text-primary" />
                     </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Pending Payments
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Awaiting settlement
+                      </p>
+                    </div>
+                    <div className="ml-auto font-bold">{stats.pendingPayments}</div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="mr-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <PieChart className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium leading-none">
+                        Net Profit
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Monthly earnings
+                      </p>
+                    </div>
+                    <div className="ml-auto font-bold">${stats.monthlyIncome - stats.monthlyExpenses}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="col-span-1">
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>
+                Latest updates across the system
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-8">
+                <div className="flex">
+                  <div className="relative mr-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
+                      <User className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                    <span className="absolute top-0 right-0 flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-primary"></span>
+                    </span>
+                  </div>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      New student registered
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Emma Johnson joined the platform
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      5 minutes ago
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex">
+                  <div className="mr-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
+                      <Book className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      New course published
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      "Advanced React Development" is now available
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      2 hours ago
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex">
+                  <div className="mr-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
+                      <Layers className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      Project milestone reached
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      "Website Redesign" reached 75% completion
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      1 day ago
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex">
+                  <div className="mr-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
+                      <DollarSign className="h-4 w-4 text-primary-foreground" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      Payment received
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      $3,500 payment from ABC Corporation
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      2 days ago
+                    </p>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
-      )}
+      </div>
     </MainLayout>
+  );
+}
+
+interface StatsCardProps {
+  title: string;
+  value: string | number;
+  description: string;
+  icon: React.ReactNode;
+}
+
+function StatsCard({ title, value, description, icon }: StatsCardProps) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">
+          {title}
+        </CardTitle>
+        {icon}
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        <p className="text-xs text-muted-foreground">
+          {description}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
