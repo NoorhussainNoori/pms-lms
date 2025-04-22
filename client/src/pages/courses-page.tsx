@@ -24,6 +24,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeftRight, Book, Edit, FileText, Loader2, Plus, Trash, User } from "lucide-react";
+import MainLayout from "../components/layout/main-layout";
 
 // Mock data for development
 const COURSES = [
@@ -79,8 +80,6 @@ const courseSchema = z.object({
 });
 
 type CourseFormValues = z.infer<typeof courseSchema>;
-
-import MainLayout from "../components/layout/main-layout";
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState(COURSES);

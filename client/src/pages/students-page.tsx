@@ -40,6 +40,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, Loader2, MoreHorizontal, Plus, Search, UserPlus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import MainLayout from "../components/layout/main-layout";
 
 // Mock student data for development
 const STUDENTS = [
@@ -169,14 +170,15 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Students</h1>
-          <p className="text-muted-foreground">
-            Manage student accounts and enrollments
-          </p>
-        </div>
+    <MainLayout>
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Students</h1>
+            <p className="text-muted-foreground">
+              Manage student accounts and enrollments
+            </p>
+          </div>
         
         <Dialog open={isAddingStudent} onOpenChange={setIsAddingStudent}>
           <DialogTrigger asChild>
@@ -387,5 +389,6 @@ export default function StudentsPage() {
         </Table>
       </div>
     </div>
+    </MainLayout>
   );
 }

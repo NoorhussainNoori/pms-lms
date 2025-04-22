@@ -6,7 +6,7 @@ import NotFound from "@/pages/not-found";
 import TempAuthPage from "@/pages/temp-auth-page";
 import Dashboard from "@/pages/dashboard";
 import CoursesPage from "@/pages/courses-page";
-import StudentsPage from "@/pages/students-page";
+import StudentsPage from "@/pages/students-page-fixed";
 
 // Import other pages as they are created
 // import QuizzesPage from "@/pages/quizzes-page";
