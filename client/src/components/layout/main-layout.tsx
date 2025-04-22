@@ -39,6 +39,7 @@ interface MainLayoutProps {
 export default function MainLayout({ children }: MainLayoutProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [location] = useLocation();
   
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         console.error("Error parsing user from localStorage", e);
       }
     }
+    setIsLoading(false);
   }, []);
 
   function handleLogout() {
@@ -58,7 +60,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
     window.location.href = "/auth";
   }
 
-  // If not logged in, don't render the layout
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
+  // If not logged in, redirect to auth page
   if (!user) {
     window.location.href = "/auth";
     return null;
