@@ -112,10 +112,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
           {/* Sidebar header */}
           <div className="flex items-center justify-between p-4">
             <Link href="/">
-              <a className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 cursor-pointer">
                 <BookOpen className="h-6 w-6 text-primary" />
                 <span className="text-lg font-bold">LMS & PM System</span>
-              </a>
+              </div>
             </Link>
             <Button
               variant="ghost"
@@ -134,9 +134,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <li key={idx} className="space-y-2">
                   {navItem.href ? (
                     <Link href={navItem.href}>
-                      <a
+                      <div
                         className={cn(
-                          "flex items-center space-x-2 rounded-lg px-3 py-2 text-sm font-medium",
+                          "flex items-center space-x-2 rounded-lg px-3 py-2 text-sm font-medium cursor-pointer",
                           location === navItem.href
                             ? "bg-primary/10 text-primary"
                             : "text-muted-foreground hover:bg-muted hover:text-primary"
@@ -144,7 +144,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                       >
                         {navItem.icon && <navItem.icon className="h-5 w-5" />}
                         <span>{navItem.title}</span>
-                      </a>
+                      </div>
                     </Link>
                   ) : (
                     <>
@@ -155,9 +155,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         {navItem.items?.map((item, itemIdx) => (
                           <li key={itemIdx}>
                             <Link href={item.href}>
-                              <a
+                              <div
                                 className={cn(
-                                  "flex items-center space-x-2 rounded-lg px-3 py-2 text-sm font-medium",
+                                  "flex items-center space-x-2 rounded-lg px-3 py-2 text-sm font-medium cursor-pointer",
                                   location === item.href
                                     ? "bg-primary/10 text-primary"
                                     : "text-muted-foreground hover:bg-muted hover:text-primary"
@@ -165,7 +165,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                               >
                                 {item.icon && <item.icon className="h-4 w-4" />}
                                 <span>{item.title}</span>
-                              </a>
+                              </div>
                             </Link>
                           </li>
                         ))}
