@@ -1,31 +1,24 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
-import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { storage } from "./storage";
-import { User as SelectUser, UserRole, insertUserSchema } from "@shared/schema";
+import { storage } from "./storage.js";
+import { UserRole, insertUserSchema } from "../shared/schema.js";
 import { z } from "zod";
-
-declare global {
-  namespace Express {
-    interface User extends SelectUser {}
-  }
-}
+import session from "express-session"; // <-- Added this missing import
 
 const scryptAsync = promisify(scrypt);
 
-async function hashPassword(password: string) {
+async function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  const buf = await scryptAsync(password, salt, 64);
   return `${buf.toString("hex")}.${salt}`;
 }
 
-async function comparePasswords(supplied: string, stored: string) {
+async function comparePasswords(supplied, stored) {
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  const suppliedBuf = await scryptAsync(supplied, salt, 64);
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
@@ -37,12 +30,12 @@ const registerUserSchema = insertUserSchema.extend({
     UserRole.STUDENT,
     UserRole.PROJECT_MANAGER,
     UserRole.EMPLOYEE,
-    UserRole.FINANCE
+    UserRole.FINANCE,
   ]),
 });
 
-export function setupAuth(app: Express) {
-  const sessionSettings: session.SessionOptions = {
+export function setupAuth(app) {
+  const sessionSettings = {
     secret: process.env.SESSION_SECRET || "learningmanagementsystem_secret_key",
     resave: false,
     saveUninitialized: false,
@@ -53,7 +46,7 @@ export function setupAuth(app: Express) {
   };
 
   app.set("trust proxy", 1);
-  app.use(session(sessionSettings));
+  app.use(session(sessionSettings)); // 'session' is now defined
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -69,11 +62,11 @@ export function setupAuth(app: Express) {
       } catch (error) {
         return done(error);
       }
-    }),
+    })
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
-  passport.deserializeUser(async (id: number, done) => {
+  passport.deserializeUser(async (id, done) => {
     try {
       const user = await storage.getUser(id);
       done(null, user);
@@ -86,9 +79,11 @@ export function setupAuth(app: Express) {
     try {
       // Validate request data
       const validatedData = registerUserSchema.parse(req.body);
-      
+
       // Check if username already exists
-      const existingUser = await storage.getUserByUsername(validatedData.username);
+      const existingUser = await storage.getUserByUsername(
+        validatedData.username
+      );
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
@@ -108,9 +103,9 @@ export function setupAuth(app: Express) {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Validation failed", 
-          errors: error.errors 
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: error.errors,
         });
       }
       next(error);
@@ -118,12 +113,14 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error, user: SelectUser) => {
+    passport.authenticate("local", (err, user) => {
       if (err) return next(err);
       if (!user) {
-        return res.status(401).json({ message: "Invalid username or password" });
+        return res
+          .status(401)
+          .json({ message: "Invalid username or password" });
       }
-      
+
       req.login(user, (loginErr) => {
         if (loginErr) return next(loginErr);
         // Return user without password
@@ -142,9 +139,11 @@ export function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     // Return user without password
-    const { password, ...userWithoutPassword } = req.user as SelectUser;
+    const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });
 }
+
+// export { setupAuth };

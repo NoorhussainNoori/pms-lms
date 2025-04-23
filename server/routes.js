@@ -1,10 +1,9 @@
-import type { Express } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { setupAuth } from "./auth";
-import { UserRole } from "@shared/schema";
-import { z } from "zod";
+import { createServer } from "http";
+import { storage } from "./storage.js";
+import { setupAuth } from "./auth.js";
+// Assuming UserRole is exported as a standard JS object or enum equivalent from @shared/schema
 import {
+  UserRole,
   insertCourseSchema,
   insertCourseContentSchema,
   insertEnrollmentSchema,
@@ -18,10 +17,11 @@ import {
   insertTaskSchema,
   insertExpenseSchema,
   insertProjectPaymentSchema,
-} from "@shared/schema";
+} from "./../shared/schema.js";
+import { z } from "zod";
 
 // Middleware to check authentication
-function isAuthenticated(req: any, res: any, next: any) {
+function isAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
     return next();
   }
@@ -29,48 +29,50 @@ function isAuthenticated(req: any, res: any, next: any) {
 }
 
 // Middleware to check role
-function hasRole(roles: UserRole[]) {
-  return (req: any, res: any, next: any) => {
+function hasRole(roles) {
+  return (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    
-    if (roles.includes(req.user.role as UserRole)) {
+
+    if (roles.includes(req.user.role)) {
       return next();
     }
-    
+
     res.status(403).json({ message: "Forbidden - Insufficient permissions" });
   };
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app) {
   // Set up authentication routes
   setupAuth(app);
 
   // User routes
   app.get(
-    "/api/users", 
-    isAuthenticated, 
-    hasRole([UserRole.ADMIN]), 
+    "/api/users",
+    isAuthenticated,
+    hasRole([UserRole.ADMIN]),
     async (req, res) => {
       try {
-        const role = req.query.role as UserRole;
+        const role = req.query.role;
         let users;
-        
+
         if (role) {
           users = await storage.getUsersByRole(role);
         } else {
           // Return all users except the current user
           const allUsers = [];
           for (const r of Object.values(UserRole)) {
-            const usersWithRole = await storage.getUsersByRole(r as UserRole);
+            const usersWithRole = await storage.getUsersByRole(r);
             allUsers.push(...usersWithRole);
           }
-          users = allUsers.filter(user => user.id !== req.user.id);
+          users = allUsers.filter((user) => user.id !== req.user.id);
         }
-        
+
         // Return users without passwords
-        const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+        const usersWithoutPasswords = users.map(
+          ({ password, ...user }) => user
+        );
         res.json(usersWithoutPasswords);
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -116,11 +118,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const course = await storage.getCourse(id);
-      
+
       if (!course) {
         return res.status(404).json({ message: "Course not found" });
       }
-      
+
       res.json(course);
     } catch (error) {
       console.error("Error fetching course:", error);
@@ -137,11 +139,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const id = parseInt(req.params.id);
         const data = insertCourseSchema.partial().parse(req.body);
         const course = await storage.updateCourse(id, data);
-        
+
         if (!course) {
           return res.status(404).json({ message: "Course not found" });
         }
-        
+
         res.json(course);
       } catch (error) {
         if (error instanceof z.ZodError) {
@@ -164,11 +166,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const id = parseInt(req.params.id);
         const deleted = await storage.deleteCourse(id);
-        
+
         if (!deleted) {
           return res.status(404).json({ message: "Course not found" });
         }
-        
+
         res.sendStatus(204);
       } catch (error) {
         console.error("Error deleting course:", error);
@@ -200,16 +202,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  app.get("/api/courses/:courseId/contents", isAuthenticated, async (req, res) => {
-    try {
-      const courseId = parseInt(req.params.courseId);
-      const contents = await storage.getCourseContentsByCourse(courseId);
-      res.json(contents);
-    } catch (error) {
-      console.error("Error fetching course contents:", error);
-      res.status(500).json({ message: "Internal server error" });
+  app.get(
+    "/api/courses/:courseId/contents",
+    isAuthenticated,
+    async (req, res) => {
+      try {
+        const courseId = parseInt(req.params.courseId);
+        const contents = await storage.getCourseContentsByCourse(courseId);
+        res.json(contents);
+      } catch (error) {
+        console.error("Error fetching course contents:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
     }
-  });
+  );
 
   // Enrollment routes
   app.post(
@@ -240,15 +246,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       try {
         const studentId = parseInt(req.params.studentId);
-        
+
         // Only admin or the student themselves can view enrollments
-        if (
-          req.user.role !== UserRole.ADMIN &&
-          req.user.id !== studentId
-        ) {
+        if (req.user.role !== UserRole.ADMIN && req.user.id !== studentId) {
           return res.status(403).json({ message: "Forbidden" });
         }
-        
+
         const enrollments = await storage.getEnrollmentsByStudent(studentId);
         res.json(enrollments);
       } catch (error) {
@@ -297,16 +300,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  app.get("/api/courses/:courseId/quizzes", isAuthenticated, async (req, res) => {
-    try {
-      const courseId = parseInt(req.params.courseId);
-      const quizzes = await storage.getQuizzesByCourse(courseId);
-      res.json(quizzes);
-    } catch (error) {
-      console.error("Error fetching quizzes:", error);
-      res.status(500).json({ message: "Internal server error" });
+  app.get(
+    "/api/courses/:courseId/quizzes",
+    isAuthenticated,
+    async (req, res) => {
+      try {
+        const courseId = parseInt(req.params.courseId);
+        const quizzes = await storage.getQuizzesByCourse(courseId);
+        res.json(quizzes);
+      } catch (error) {
+        console.error("Error fetching quizzes:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
     }
-  });
+  );
 
   // Quiz question routes
   app.post(
@@ -331,48 +338,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  app.get("/api/quizzes/:quizId/questions", isAuthenticated, async (req, res) => {
-    try {
-      const quizId = parseInt(req.params.quizId);
-      const questions = await storage.getQuizQuestionsByQuiz(quizId);
-      res.json(questions);
-    } catch (error) {
-      console.error("Error fetching quiz questions:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // Quiz result routes
-  app.post(
-    "/api/quiz-results",
+  app.get(
+    "/api/quizzes/:quizId/questions",
     isAuthenticated,
     async (req, res) => {
       try {
-        const data = insertQuizResultSchema.parse(req.body);
-        
-        // If not admin or instructor, ensure the student ID is the current user's ID
-        if (
-          req.user.role !== UserRole.ADMIN &&
-          req.user.role !== UserRole.INSTRUCTOR &&
-          req.user.id !== data.studentId
-        ) {
-          return res.status(403).json({ message: "Forbidden" });
-        }
-        
-        const result = await storage.createQuizResult(data);
-        res.status(201).json(result);
+        const quizId = parseInt(req.params.quizId);
+        const questions = await storage.getQuizQuestionsByQuiz(quizId);
+        res.json(questions);
       } catch (error) {
-        if (error instanceof z.ZodError) {
-          return res.status(400).json({
-            message: "Validation failed",
-            errors: error.errors,
-          });
-        }
-        console.error("Error creating quiz result:", error);
+        console.error("Error fetching quiz questions:", error);
         res.status(500).json({ message: "Internal server error" });
       }
     }
   );
+
+  // Quiz result routes
+  app.post("/api/quiz-results", isAuthenticated, async (req, res) => {
+    try {
+      const data = insertQuizResultSchema.parse(req.body);
+
+      // If not admin or instructor, ensure the student ID is the current user's ID
+      if (
+        req.user.role !== UserRole.ADMIN &&
+        req.user.role !== UserRole.INSTRUCTOR &&
+        req.user.id !== data.studentId
+      ) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const result = await storage.createQuizResult(data);
+      res.status(201).json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: error.errors,
+        });
+      }
+      console.error("Error creating quiz result:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
 
   app.get(
     "/api/quizzes/:quizId/results",
@@ -396,7 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       try {
         const studentId = parseInt(req.params.studentId);
-        
+
         // Only admin, instructor, or the student themselves can view results
         if (
           req.user.role !== UserRole.ADMIN &&
@@ -405,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ) {
           return res.status(403).json({ message: "Forbidden" });
         }
-        
+
         const results = await storage.getQuizResultsByStudent(studentId);
         res.json(results);
       } catch (error) {
@@ -416,42 +423,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Comment routes
-  app.post(
-    "/api/comments",
+  app.post("/api/comments", isAuthenticated, async (req, res) => {
+    try {
+      // Ensure the user ID in the comment is the current user's ID
+      const data = insertCommentSchema.parse({
+        ...req.body,
+        userId: req.user.id,
+      });
+
+      const comment = await storage.createComment(data);
+      res.status(201).json(comment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: error.errors,
+        });
+      }
+      console.error("Error creating comment:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get(
+    "/api/content/:contentId/comments",
     isAuthenticated,
     async (req, res) => {
       try {
-        // Ensure the user ID in the comment is the current user's ID
-        const data = insertCommentSchema.parse({
-          ...req.body,
-          userId: req.user.id,
-        });
-        
-        const comment = await storage.createComment(data);
-        res.status(201).json(comment);
+        const contentId = parseInt(req.params.contentId);
+        const comments = await storage.getCommentsByContent(contentId);
+        res.json(comments);
       } catch (error) {
-        if (error instanceof z.ZodError) {
-          return res.status(400).json({
-            message: "Validation failed",
-            errors: error.errors,
-          });
-        }
-        console.error("Error creating comment:", error);
+        console.error("Error fetching comments:", error);
         res.status(500).json({ message: "Internal server error" });
       }
     }
   );
-
-  app.get("/api/content/:contentId/comments", isAuthenticated, async (req, res) => {
-    try {
-      const contentId = parseInt(req.params.contentId);
-      const comments = await storage.getCommentsByContent(contentId);
-      res.json(comments);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
 
   // Project routes
   app.post(
@@ -476,34 +483,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  app.get(
-    "/api/projects",
-    isAuthenticated,
-    async (req, res) => {
-      try {
-        let projects;
-        
-        // Filter projects based on user role
-        if (req.user.role === UserRole.ADMIN || req.user.role === UserRole.PROJECT_MANAGER) {
-          projects = await storage.getAllProjects();
-        } else if (req.user.role === UserRole.EMPLOYEE) {
-          // Employees can only see projects they are assigned to
-          const employeeTasks = await storage.getTasksByEmployee(req.user.id);
-          const projectIds = [...new Set(employeeTasks.map(task => task.projectId))];
-          projects = await Promise.all(
-            projectIds.map(async (id) => await storage.getProject(id) as any)
-          );
-        } else {
-          return res.status(403).json({ message: "Forbidden" });
-        }
-        
-        res.json(projects);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-        res.status(500).json({ message: "Internal server error" });
+  app.get("/api/projects", isAuthenticated, async (req, res) => {
+    try {
+      let projects;
+
+      // Filter projects based on user role
+      if (
+        req.user.role === UserRole.ADMIN ||
+        req.user.role === UserRole.PROJECT_MANAGER
+      ) {
+        projects = await storage.getAllProjects();
+      } else if (req.user.role === UserRole.EMPLOYEE) {
+        // Employees can only see projects they are assigned to
+        const employeeTasks = await storage.getTasksByEmployee(req.user.id);
+        const projectIds = [
+          ...new Set(employeeTasks.map((task) => task.projectId)),
+        ];
+        projects = await Promise.all(
+          projectIds.map(async (id) => await storage.getProject(id))
+        );
+        // Filter out null projects in case getProject returns null
+        projects = projects.filter((project) => project !== null);
+      } else {
+        return res.status(403).json({ message: "Forbidden" });
       }
+
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-  );
+  });
 
   // Client routes
   app.post(
@@ -566,16 +576,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  app.get("/api/projects/:projectId/milestones", isAuthenticated, async (req, res) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      const milestones = await storage.getMilestonesByProject(projectId);
-      res.json(milestones);
-    } catch (error) {
-      console.error("Error fetching milestones:", error);
-      res.status(500).json({ message: "Internal server error" });
+  app.get(
+    "/api/projects/:projectId/milestones",
+    isAuthenticated,
+    async (req, res) => {
+      try {
+        const projectId = parseInt(req.params.projectId);
+        const milestones = await storage.getMilestonesByProject(projectId);
+        res.json(milestones);
+      } catch (error) {
+        console.error("Error fetching milestones:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
     }
-  });
+  );
 
   // Task routes
   app.post(
@@ -600,81 +614,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  app.get("/api/projects/:projectId/tasks", isAuthenticated, async (req, res) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      const tasks = await storage.getTasksByProject(projectId);
-      res.json(tasks);
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  app.get("/api/employees/:employeeId/tasks", isAuthenticated, async (req, res) => {
-    try {
-      const employeeId = parseInt(req.params.employeeId);
-      
-      // Only admin, project manager, or the employee themselves can view their tasks
-      if (
-        req.user.role !== UserRole.ADMIN &&
-        req.user.role !== UserRole.PROJECT_MANAGER &&
-        req.user.id !== employeeId
-      ) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      
-      const tasks = await storage.getTasksByEmployee(employeeId);
-      res.json(tasks);
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  app.put(
-    "/api/tasks/:id",
+  app.get(
+    "/api/projects/:projectId/tasks",
     isAuthenticated,
     async (req, res) => {
       try {
-        const id = parseInt(req.params.id);
-        const task = await storage.getTask(id);
-        
-        if (!task) {
-          return res.status(404).json({ message: "Task not found" });
-        }
-        
-        // If not admin or project manager, ensure the employee is assigned to this task
-        if (
-          req.user.role !== UserRole.ADMIN &&
-          req.user.role !== UserRole.PROJECT_MANAGER &&
-          req.user.id !== task.assignedTo
-        ) {
-          return res.status(403).json({ message: "Forbidden" });
-        }
-        
-        // If employee, they can only update the status
-        let data;
-        if (req.user.role === UserRole.EMPLOYEE) {
-          data = { status: req.body.status };
-        } else {
-          data = insertTaskSchema.partial().parse(req.body);
-        }
-        
-        const updatedTask = await storage.updateTask(id, data);
-        res.json(updatedTask);
+        const projectId = parseInt(req.params.projectId);
+        const tasks = await storage.getTasksByProject(projectId);
+        res.json(tasks);
       } catch (error) {
-        if (error instanceof z.ZodError) {
-          return res.status(400).json({
-            message: "Validation failed",
-            errors: error.errors,
-          });
-        }
-        console.error("Error updating task:", error);
+        console.error("Error fetching tasks:", error);
         res.status(500).json({ message: "Internal server error" });
       }
     }
   );
+
+  app.get(
+    "/api/employees/:employeeId/tasks",
+    isAuthenticated,
+    async (req, res) => {
+      try {
+        const employeeId = parseInt(req.params.employeeId);
+
+        // Only admin, project manager, or the employee themselves can view their tasks
+        if (
+          req.user.role !== UserRole.ADMIN &&
+          req.user.role !== UserRole.PROJECT_MANAGER &&
+          req.user.id !== employeeId
+        ) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+
+        const tasks = await storage.getTasksByEmployee(employeeId);
+        res.json(tasks);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+
+  app.put("/api/tasks/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const task = await storage.getTask(id);
+
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // If not admin or project manager, ensure the employee is assigned to this task
+      if (
+        req.user.role !== UserRole.ADMIN &&
+        req.user.role !== UserRole.PROJECT_MANAGER &&
+        req.user.id !== task.assignedTo
+      ) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      // If employee, they can only update the status
+      let data;
+      if (req.user.role === UserRole.EMPLOYEE) {
+        data = { status: req.body.status };
+      } else {
+        data = insertTaskSchema.partial().parse(req.body);
+      }
+
+      const updatedTask = await storage.updateTask(id, data);
+      res.json(updatedTask);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: error.errors,
+        });
+      }
+      console.error("Error updating task:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
 
   // Expense routes
   app.post(
@@ -705,15 +723,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     hasRole([UserRole.ADMIN, UserRole.FINANCE]),
     async (req, res) => {
       try {
-        const category = req.query.category as string;
+        const category = req.query.category;
         let expenses;
-        
+
         if (category) {
           expenses = await storage.getExpensesByCategory(category);
         } else {
           expenses = await storage.getAllExpenses();
         }
-        
+
         res.json(expenses);
       } catch (error) {
         console.error("Error fetching expenses:", error);
